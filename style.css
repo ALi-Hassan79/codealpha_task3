@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #06060e;
+  --surface: #0c0c1e;
+  --surface-2: #0a0a1a;
+  --border: #1c1c38;
+  --text: #d0d0f0;
+  --muted: #5050a0;
+  --dim: #303060;
+
+  /* Gesture palette — these exact values are shared with the on-canvas
+     cursor ring colors in script7.js (GCOL), so the sidebar legend and
+     the live cursor always speak the same visual language. */
+  --g-point: #6655ff;
+  --g-open:  #ff4d8f;
+  --g-fist:  #ffaa30;
+  --g-peace: #39ffb0;
+  --g-horns: #ffdd00;
+  --g-pinch: #00e5ff;
+
+  --accent: var(--g-point);
+  --radius: 8px;
+}
+
+html { scrollbar-color: var(--border) var(--bg); }
+
+body {
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, #10102a 0%, transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px; gap: 12px;
+}
+
+.page {
+  width: 100%;
+  max-width: 1400px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+/* ── HEADER ────────────────────────────────────────────────────────────── */
+#header {
+  width: 100%;
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+#logo {
+  font-size: 13px; font-weight: 600; letter-spacing: .22em;
+  color: var(--muted); text-transform: uppercase;
+}
+#logo span { color: var(--accent); }
+#statusrow { display: flex; align-items: center; gap: 8px; font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+#pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #252545; transition: background .3s, box-shadow .3s;
+}
+#pulse.on   { background: var(--g-peace); box-shadow: 0 0 8px var(--g-peace); }
+#pulse.draw { background: var(--g-open);  box-shadow: 0 0 8px var(--g-open); }
+
+/* ── GESTURE LEGEND (ON-CANVAS OVERLAY, LEFT SIDE) ────────────────────── */
+/* Lives inside #stage in the HTML (a sibling of #video/#draw-canvas/
+   #overlay-canvas), so it floats directly over the writing surface
+   instead of taking up separate page real estate. */
+#hints {
+  position: absolute;
+  top: 12px; left: 12px; bottom: 12px;
+  z-index: 15;
+  width: 176px;
+  overflow-y: auto;
+  background: rgba(8,8,20,0.72);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none; /* HUD only — never blocks hand tracking/drawing */
+}
+#hints .hints-title {
+  font-size: 9px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--dim); padding: 0 4px 8px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.h {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 10.5px; color: #8888c0; letter-spacing: .02em;
+  padding: 6px 6px;
+  border-radius: 5px;
+  border-left: 3px solid transparent;
+}
+.h .icon { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+.h .label {
+  font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 9.5px;
+}
+.h .desc { display: none; } /* hidden in the compact overlay form; label + icon is enough at a glance */
+
+@media (max-width: 700px) {
+  #hints { display: none; } /* not enough room over a small canvas; toolbar hints remain implicit */
+}
+
+.h[data-g="point"] { border-left-color: var(--g-point); }
+.h[data-g="point"] .label { color: var(--g-point); }
+.h[data-g="peace"] { border-left-color: var(--g-peace); }
+.h[data-g="peace"] .label { color: var(--g-peace); }
+.h[data-g="horns"] { border-left-color: var(--g-horns); }
+.h[data-g="horns"] .label { color: var(--g-horns); }
+.h[data-g="fist"]  { border-left-color: var(--g-fist); }
+.h[data-g="fist"]  .label { color: var(--g-fist); }
+.h[data-g="open"]  { border-left-color: var(--g-open); }
+.h[data-g="open"]  .label { color: var(--g-open); }
+.h[data-g="pinch"] { border-left-color: var(--g-pinch); }
+.h[data-g="pinch"] .label { color: var(--g-pinch); }
+
+/* ── STAGE ─────────────────────────────────────────────────────────────── */
+#stage {
+  position: relative; width: 100%;
+  aspect-ratio: 16/10;
+  border-radius: 10px; overflow: hidden;
+  border: 1px solid var(--border);
+  background: #080814;
+  box-shadow: 0 0 0 1px rgba(102,85,255,0.04), 0 20px 50px -20px rgba(0,0,0,0.6);
+}
+
+#video {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; transform: scaleX(-1); opacity: .12; z-index: 0;
+}
+#draw-canvas    { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+#overlay-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+
+#start-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px;
+  background: rgba(6,6,14,.94);
+}
+#start-overlay .big { font-size: 13px; font-weight: 600; letter-spacing: .2em; color: var(--muted); }
+#start-overlay .sub { font-size: 10px; color: var(--dim); letter-spacing: .12em; }
+#start-btn {
+  background: #0d0d28; border: 1px solid var(--accent);
+  color: var(--accent); font-family: inherit;
+  font-size: 12px; font-weight: 600; letter-spacing: .18em; padding: 10px 28px;
+  border-radius: 4px; cursor: pointer; text-transform: uppercase; transition: all .2s;
+}
+#start-btn:hover  { background: #181840; border-color: #9988ff; color: #9988ff; }
+#start-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#load-progress { font-size: 10px; letter-spacing: .12em; color: var(--dim); min-height: 16px; }
+
+/* ── TOOLBAR ───────────────────────────────────────────────────────────── */
+#toolbar {
+  width: 100%;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.btn {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); font-family: inherit;
+  font-size: 11px; font-weight: 500; letter-spacing: .1em; padding: 7px 14px;
+  border-radius: 6px; cursor: pointer; transition: all .15s; text-transform: uppercase;
+}
+.btn:hover { border-color: var(--accent); color: #aaa8ff; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn.on { border-color: var(--g-peace); color: var(--g-peace); background: #061a10; }
+
+#colors { display: flex; gap: 6px; align-items: center; }
+.dot {
+  width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform .15s, box-shadow .15s;
+}
+.dot:hover { transform: scale(1.25); }
+.dot.sel { border-color: #fff; transform: scale(1.15); box-shadow: 0 0 8px rgba(255,255,255,0.25); }
+
+#sz-wrap { display: flex; gap: 6px; align-items: center; margin-left: auto; }
+#sz-wrap label { font-size: 10px; color: var(--muted); letter-spacing: .1em; }
+input[type=range] { width: 72px; accent-color: var(--accent); }
+#sz-num { font-size: 11px; color: var(--muted); min-width: 20px; }
+
+/* ── SMOOTHING PANEL ───────────────────────────────────────────────────── */
+#smooth-wrap {
+  width: 100%;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 16px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.slabel { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); min-width: 100px; }
+#smooth-range  { width: 110px; accent-color: var(--g-peace); }
+#smooth-val    { font-size: 11px; color: var(--g-peace); min-width: 24px; }
+#mindist-range { width: 110px; accent-color: var(--g-fist); }
+#mindist-val   { font-size: 11px; color: var(--g-fist); min-width: 24px; }
+
+/* ── STAT CARDS ────────────────────────────────────────────────────────── */
+#cards {
+  width: 100%;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 8px;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; transition: border-color .15s;
+}
+.card:hover { border-color: #2a2a52; }
+.card .lbl { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin-bottom: 4px; }
+.card .val { font-size: 20px; font-weight: 700; color: #a0a0ff; letter-spacing: .04em; }
+.card .sub { font-size: 11px; color: var(--dim); margin-top: 2px; word-break: break-word; }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirPen · v7</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="page">
+
+  <div id="header">
+    <div id="logo">✦ Air<span>Pen</span> · v7</div>
+    <div id="statusrow">
+      <div id="pulse"></div>
+      <span id="status-txt">offline</span>
+      <span id="slide-status">bridge: disconnected</span>
+    </div>
+  </div>
+
+  <div id="stage">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="draw-canvas"></canvas>
+    <canvas id="overlay-canvas"></canvas>
+
+    <!-- Gesture legend — floats as a HUD overlay on the left side of the
+         canvas itself (see #hints in style.css: position:absolute, left).
+         data-g on each row matches the gesture-color variables so the
+         legend and the live cursor ring always agree on color. -->
+    <div id="hints">
+      <div class="hints-title">Gestures</div>
+      <div class="h" data-g="point"><span class="icon">☞</span><span class="label">Index up</span></div>
+      <div class="h" data-g="peace"><span class="icon">✌</span><span class="label">Peace</span></div>
+      <div class="h" data-g="horns"><span class="icon">🤘</span><span class="label">Horns+swipe</span></div>
+      <div class="h" data-g="fist"><span class="icon">✊</span><span class="label">Fist</span></div>
+      <div class="h" data-g="open"><span class="icon">🖐</span><span class="label">Open</span></div>
+      <div class="h" data-g="pinch"><span class="icon">🤌</span><span class="label">Pinch</span></div>
+    </div>
+
+    <div id="start-overlay">
+      <div class="big">AIR PEN · v7</div>
+      <button id="start-btn" onclick="boot()">▶ ACTIVATE + LOAD MODEL</button>
+      <div id="load-progress">awaiting activation…</div>
+      <div class="sub">requires webcam · mediapipe hands</div>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button class="btn" onclick="clearCanvas()">⌫ CLEAR</button>
+    <button class="btn" id="recog-btn" onclick="recognizeLetter()">◈ AI RECOGNIZE</button>
+    <button class="btn" id="erase-btn" onclick="toggleEraser()">◻ ERASER</button>
+    <button class="btn" onclick="saveAllPages()">💾 SAVE</button>
+    <div id="colors">
+      <div class="dot sel" style="background:#ffffff" onclick="setColor('#ffffff',this)"></div>
+      <div class="dot" style="background:#39ffb0" onclick="setColor('#39ffb0',this)"></div>
+      <div class="dot" style="background:#6655ff" onclick="setColor('#6655ff',this)"></div>
+      <div class="dot" style="background:#ff4d8f" onclick="setColor('#ff4d8f',this)"></div>
+      <div class="dot" style="background:#ffaa30" onclick="setColor('#ffaa30',this)"></div>
+      <div class="dot" style="background:#00e5ff" onclick="setColor('#00e5ff',this)"></div>
+    </div>
+    <div id="sz-wrap">
+      <label>SIZE</label>
+      <input type="range" id="sz" min="3" max="22" value="6" step="1"
+        oninput="brushSize=+this.value; document.getElementById('sz-num').textContent=brushSize">
+      <span id="sz-num">6</span>
+    </div>
+  </div>
+
+  <div id="smooth-wrap">
+    <span class="slabel">Smoothing</span>
+    <input type="range" id="smooth-range" min="1" max="20" value="3" step="1"
+      oninput="SMOOTH=+this.value/20; document.getElementById('smooth-val').textContent=this.value">
+    <span id="smooth-val">3</span>
+
+    <span class="slabel" style="margin-left:16px;">Min move (px)</span>
+    <input type="range" id="mindist-range" min="1" max="20" value="3" step="1"
+      oninput="MIN_DIST=+this.value; document.getElementById('mindist-val').textContent=this.value">
+    <span id="mindist-val">3</span>
+    <span style="font-size:10px;color:#1e1e40;margin-left:auto;letter-spacing:.08em;">tune for your hand steadiness</span>
+  </div>
+
+  <div id="cards">
+    <div class="card"><div class="lbl">gesture</div><div class="val" id="c-gest">—</div></div>
+    <div class="card"><div class="lbl">strokes</div><div class="val" id="c-strk">0</div></div>
+    <div class="card"><div class="lbl">recognition</div><div class="val" id="c-recog">—</div><div class="sub" id="c-conf"></div></div>
+    <div class="card"><div class="lbl">hand score</div><div class="val" id="c-score">—</div></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="script7.js"></script>
+</body>
+</html>
